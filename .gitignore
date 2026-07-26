@@ -1,0 +1,25 @@
+# Build artifacts and core dumps from examples/crash-demo
+examples/crash-demo/crash
+examples/crash-demo/crash_arm64
+examples/crash-demo/crash_np
+examples/crash-demo/cnp
+examples/crash-demo/cnp.stripped
+examples/crash-demo/cnp.debug
+examples/crash-demo/*.debug
+examples/crash-demo/*.stripped
+examples/crash-demo/*.o
+core
+core.*
+*.core
+vgcore.*
+
+# GDB / triage output
+triage.txt
+*.triage.txt
+gdb-session.txt
+gdb.txt
+.gdb_history
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db

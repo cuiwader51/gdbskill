@@ -1,0 +1,64 @@
+# Recommended ~/.gdbinit  —  copy to your home dir, or `source` it per-session.
+#   cp gdbinit-recommended ~/.gdbinit
+# Sane defaults for crash/dump/hang debugging.
+
+# --- readability ---
+set pagination off
+set print pretty on
+set print frame-arguments all
+set print object on
+set print vtbl on
+set print array on
+set print array-indexes on
+set confirm off
+
+# --- history & logging ---
+set history save on
+set history size 100000
+set history filename ~/.gdb_history
+# Uncomment to log every session to gdb.txt in the cwd:
+# set logging enabled on
+
+# --- backtraces ---
+set backtrace past-main on
+set backtrace limit 200
+
+# --- python pretty-printers usually auto-load; keep safe paths open ---
+# add-auto-load-safe-path /usr
+
+# --- handy custom commands ---
+
+# `xbt` : full backtrace of every thread (great for hangs/deadlocks)
+define xbt
+  thread apply all bt full
+end
+document xbt
+Full backtrace with locals for ALL threads.
+end
+
+# `fault` : print the faulting address + instruction (post-SIGSEGV)
+define fault
+  print $_siginfo
+  p/x $_siginfo._sifields._sigfault.si_addr
+  x/i $pc
+  info registers
+end
+document fault
+Show signal info, faulting address (si_addr), faulting instruction, and registers.
+end
+
+# `stk` : dump raw stack words from the stack pointer
+define stk
+  x/32xg $sp
+end
+document stk
+Dump 32 giant words starting at the stack pointer.
+end
+
+# `syms` : quick check whether symbols/libs are loaded
+define syms
+  info sharedlibrary
+end
+document syms
+List shared libraries and whether their symbols are loaded.
+end
