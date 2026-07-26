@@ -158,7 +158,7 @@ Before/after this looks like:
 BEFORE:  #0 0x401168 in ?? ()             #1 0x4011af in ?? ()
 AFTER:   #0 compute_stats (...) at crash.c:16   #1 process (...) at crash.c:23
 ```
-A runnable end-to-end example is in [../../../examples/crash-demo/demo-add-symbol-file.sh](../../../examples/crash-demo/demo-add-symbol-file.sh)
+A runnable end-to-end example is in [../../examples/crash-demo/demo-add-symbol-file.sh](../../examples/crash-demo/demo-add-symbol-file.sh)
 (builds, strips, then restores symbols with `add-symbol-file`).
 
 ### Gotchas

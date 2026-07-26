@@ -46,17 +46,17 @@ and pulls in only the relevant reference file. The scripts are runnable directly
 The [GitHub Copilot CLI](https://docs.github.com/copilot/github-copilot-cli) reads the **same skill
 format**, so you can use this skill from your terminal.
 
-**Option A — inside the repo (workspace scope).** The CLI auto-discovers `.github/skills/`:
+**Option A — install for your agent (recommended).** Copy the `gdb-debugging/` folder into a skills
+directory your tool scans (see [Install](#install) for the full list), then run your agent:
 ```powershell
-cd <repo-with-this-skill>
+Copy-Item -Recurse gdb-debugging "$HOME/.copilot/skills/gdb-debugging"   # GitHub Copilot CLI
 copilot
 # then ask, e.g.:  "analyze the core at examples/crash-demo/core with binary examples/crash-demo/crash"
 ```
 
-**Option B — install personally (available everywhere).** Copy the folder into `~/.copilot/skills/`:
-```powershell
-Copy-Item -Recurse .github/skills/gdb-debugging "$HOME/.copilot/skills/gdb-debugging"
-```
+**Option B — team-shared in a repo.** Commit the folder under a location the tool scans, e.g.
+`.github/skills/gdb-debugging/` (Copilot) or `.claude/skills/gdb-debugging/` (Claude), and the CLI
+auto-discovers it when run from that repo.
 
 **One-shot / non-interactive:**
 ```powershell
@@ -71,7 +71,7 @@ Notes:
 
 ## Example: real GDB output
 
-Running the bundled [examples/crash-demo/demo-add-symbol-file.sh](examples/crash-demo/demo-add-symbol-file.sh)
+Running the bundled [examples/crash-demo/demo-add-symbol-file.sh](../examples/crash-demo/demo-add-symbol-file.sh)
 through the Copilot CLI drives real GDB and recovers a symbol-less backtrace with `add-symbol-file`:
 
 ![Copilot CLI running the gdb-debugging skill: before/after add-symbol-file](docs/images/copilot-cli-add-symbol-file.png)
@@ -98,20 +98,22 @@ source lines (`crash.c:16`), and locals, exposing the NULL `samples` that caused
 
 ## Install
 
-Pick a location the agent scans (see the
-[VS Code agent skills docs](https://code.visualstudio.com/docs/copilot/customization/agent-skills)):
+`SKILL.md` is a tool-agnostic format. Copy the whole `gdb-debugging/` folder (keep the structure
+intact) into a location your agent scans:
 
-**Project (team-shared)** — commit into a repo:
-```
-<repo>/.github/skills/gdb-debugging/
+| Tool | Project (team-shared) | Personal (all workspaces) |
+|------|-----------------------|---------------------------|
+| GitHub Copilot (VS Code + CLI) | `.github/skills/gdb-debugging/` | `~/.copilot/skills/gdb-debugging/` |
+| Claude Code / Claude CLI | `.claude/skills/gdb-debugging/` | `~/.claude/skills/gdb-debugging/` |
+| Open-convention agents | `.agents/skills/gdb-debugging/` | `~/.agents/skills/gdb-debugging/` |
+
+```powershell
+# example: install personally for GitHub Copilot
+Copy-Item -Recurse gdb-debugging "$HOME/.copilot/skills/gdb-debugging"
 ```
 
-**Personal (all your workspaces):**
-```
-~/.copilot/skills/gdb-debugging/     # or ~/.agents/skills/  or  ~/.claude/skills/
-```
-
-Copy the whole `gdb-debugging/` folder (keep the structure intact).
+**Any other CLI/agent** (Cursor, Aider, a plain chat, …): it's just Markdown + scripts, so point the
+agent at it — *"read gdb-debugging/SKILL.md and follow it"* — or run the scripts directly (below).
 
 ## Use the scripts standalone
 
