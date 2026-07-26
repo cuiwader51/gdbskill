@@ -126,14 +126,6 @@ scripts/triage-core.sh ./app /var/crash ./reports
 cp scripts/gdbinit-recommended ~/.gdbinit
 ```
 
-## Publishing to GitHub
-
-This folder is self-contained and safe to publish. To share it broadly:
-
-1. Put the `gdb-debugging/` folder at the repo root (or under `.github/skills/`).
-2. `chmod +x scripts/triage-core.sh` before committing so it stays executable.
-3. Add a license (MIT is common for skills) and this README at the repo root.
-
 ## Scope
 
 Native code with a GDB backend. **Not** for pure Python/Java/JavaScript (use their own debuggers).
