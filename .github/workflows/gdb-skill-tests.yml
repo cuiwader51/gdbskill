@@ -1,0 +1,91 @@
+name: GDB skill tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Run unit tests
+        run: python -m unittest discover -s gdb-debugging/tests -v
+      - name: Check shell scripts
+        run: bash -n gdb-debugging/scripts/*.sh
+      - name: Check CLI
+        run: python gdb-debugging/scripts/gdb_agent.py --help
+
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install GDB
+        run: sudo apt-get update && sudo apt-get install -y gdb
+      - name: Build crashing demo with symbols
+        run: gcc -no-pie -Og -g3 -fno-omit-frame-pointer -o crash examples/crash-demo/crash.c
+      - name: Generate a real core dump
+        run: |
+          ulimit -c unlimited
+          sudo sysctl -w kernel.core_pattern=core
+          ./crash || true
+          ls -l core* || true
+          test -f core || { echo "no core produced"; exit 1; }
+      - name: doctor reports a healthy target
+        run: python gdb-debugging/scripts/gdb_agent.py doctor ./crash --core ./core
+      - name: collect produces a real bundle
+        run: |
+          python gdb-debugging/scripts/gdb_agent.py collect ./crash ./core --output debug-bundle
+          test -f debug-bundle/report.json
+          test -f debug-bundle/report.md
+          test -f debug-bundle/gdb.txt
+          python - <<'PY'
+          import json
+          report = json.load(open("debug-bundle/report.json"))
+          finding = report["finding"]
+          assert finding["signal"] == "SIGSEGV", finding
+          assert finding["top_frame"] and "compute_stats" in finding["top_frame"], finding
+          print("collect finding:", finding)
+          PY
+      - name: verify reproduces the crash
+        run: |
+          python gdb-debugging/scripts/gdb_agent.py verify --expect crash ./crash \
+            && echo "verify --expect crash returned success"
+      - name: session drives a live debuggee over GDB/MI
+        run: |
+          python - <<'PY'
+          import json, subprocess, sys
+          proc = subprocess.Popen(
+              [sys.executable, "gdb-debugging/scripts/gdb_agent.py", "session", "./crash"],
+              stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True,
+          )
+          requests = [
+              {"operation": "breakpoint", "location": "main"},
+              {"operation": "run"},
+              {"operation": "continue"},
+              {"operation": "quit"},
+          ]
+          out, _ = proc.communicate("\n".join(json.dumps(r) for r in requests) + "\n", timeout=120)
+          print(out)
+          reasons = [json.loads(line).get("stop_reason") for line in out.splitlines() if line.strip().startswith("{")]
+          assert "breakpoint-hit" in reasons, reasons
+          assert "signal-received" in reasons, reasons
+          print("session stop reasons:", reasons)
+          PY
+      - name: ci-triage preserves exit code and bundles cores
+        run: |
+          set +e
+          gdb-debugging/scripts/ci-triage.sh ./crash ./ci-bundles -- ./crash
+          code=$?
+          set -e
+          test "$code" -ne 0
+          ls -R ci-bundles

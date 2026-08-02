@@ -24,6 +24,14 @@ Or run the bundled scripts directly:
 gdb --batch --nx -x gdb-debugging/scripts/triage.gdb ./app ./core
 ```
 
+For structured agent or CI use:
+
+```bash
+python3 gdb-debugging/scripts/gdb_agent.py doctor ./app --core ./core
+python3 gdb-debugging/scripts/gdb_agent.py collect ./app ./core --output debug-bundle
+python3 gdb-debugging/scripts/gdb_agent.py session ./app -- failing-input
+```
+
 On Windows, Linux cores need Linux GDB — prefix with `wsl` (see the skill README).
 
 ## What's inside

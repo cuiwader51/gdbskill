@@ -19,6 +19,9 @@ triage.txt
 gdb-session.txt
 gdb.txt
 .gdb_history
+debug-bundle/
+debug-bundles/
+__pycache__/
 
 # OS / editor cruft
 .DS_Store

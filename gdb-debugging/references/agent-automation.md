@@ -115,6 +115,73 @@ MI emits structured records (`^done`, `*stopped`, `~"..."`). Send MI commands li
 `-thread-info`, `-data-evaluate-expression`. Heavier to parse than text; only worth it for a real
 integration. Editors (VS Code C/C++ extension) use MI under the hood.
 
+### Bundled JSON-lines controller
+
+`scripts/gdb_agent.py session` wraps GDB/MI with a small allowlisted protocol. Start it as a persistent
+process:
+
+```bash
+python3 scripts/gdb_agent.py session ./app -- arg1 arg2
+```
+
+Send one JSON object per line and wait for one JSON response before sending the next:
+
+```json
+{"operation":"breakpoint","location":"main"}
+{"operation":"run"}
+{"operation":"next"}
+{"operation":"locals"}
+{"operation":"evaluate","expression":"request->state"}
+{"operation":"watch","expression":"request->state"}
+{"operation":"continue"}
+{"operation":"quit"}
+```
+
+Supported operations are `breakpoint`, `watch`, `run`, `continue`, `next`, `step`, `finish`, `frames`,
+`locals`, `threads`, `registers`, and `evaluate`. Resume operations wait for GDB's `*stopped` event and
+return `stop_reason`. Arbitrary console commands and debuggee mutation are intentionally unavailable.
+
+## Structured developer commands
+
+Check the environment before spending time on a misleading trace:
+
+```bash
+python3 scripts/gdb_agent.py doctor ./app --core ./core
+```
+
+Create a bounded evidence bundle containing `report.json`, `report.md`, and `gdb.txt`:
+
+```bash
+python3 scripts/gdb_agent.py collect ./app ./core --output debug-bundle
+```
+
+Select a guided plan for `crash`, `hang`, `memory`, or `remote`:
+
+```bash
+python3 scripts/gdb_agent.py guide memory
+```
+
+Reproduce a failure before editing, then prove a clean run after rebuilding:
+
+```bash
+python3 scripts/gdb_agent.py verify --expect crash ./app -- failing-input
+python3 scripts/gdb_agent.py verify --expect clean --output verification.json ./app -- failing-input
+```
+
+These commands emit JSON so an agent or CI job can distinguish evidence from narration.
+
+## CI crash collection
+
+Wrap a native test command and retain its original exit code:
+
+```bash
+scripts/ci-triage.sh ./build/app ./debug-bundles -- ./build/native-tests
+```
+
+On failure, the wrapper searches three directory levels for conventional core names and creates one
+bundle per core. Linux runners must permit core creation; hosted environments using `systemd-coredump`
+may require a runner-specific retrieval step before collection.
+
 ## Turning a session into a repeatable script
 
 Once you know the commands, capture them so any run is one shot:

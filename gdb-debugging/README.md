@@ -21,7 +21,11 @@ gdb-debugging/
 └── scripts/
     ├── triage.gdb               # one-shot crash summary (gdb -x)
     ├── triage-core.sh           # batch a directory of cores into reports
+    ├── gdb_agent.py             # doctor, bundle, verify, guide, JSON-lines GDB/MI
+    ├── ci-triage.sh             # preserve failed-test status and bundle cores
     └── gdbinit-recommended      # sane ~/.gdbinit defaults + custom commands
+  ├── probes/                      # crash, deadlock, heap, and watchpoint probes
+  └── tests/                       # dependency-free controller/report tests
 ```
 
 ## How agents use it
@@ -127,6 +131,54 @@ scripts/triage-core.sh ./app /var/crash ./reports
 # Better defaults for every session:
 cp scripts/gdbinit-recommended ~/.gdbinit
 ```
+
+## Structured agent tooling
+
+The dependency-free Python CLI turns the playbook into an interface agents and CI can consume:
+
+```bash
+# Validate GDB, target compatibility, build ID, and symbols
+python3 scripts/gdb_agent.py doctor ./app --core ./core
+
+# Produce report.json, report.md, and bounded raw evidence
+python3 scripts/gdb_agent.py collect ./app ./core --output debug-bundle
+
+# Capture before/after evidence using the same reproduction arguments
+python3 scripts/gdb_agent.py verify --expect crash ./app -- bad-input
+python3 scripts/gdb_agent.py verify --expect clean ./app -- bad-input
+
+# Get a guided crash, hang, memory, or remote investigation plan
+python3 scripts/gdb_agent.py guide crash
+```
+
+For adaptive stepping, keep a JSON-lines GDB/MI session alive:
+
+```bash
+python3 scripts/gdb_agent.py session ./app -- bad-input
+```
+
+```json
+{"operation":"breakpoint","location":"main"}
+{"operation":"run"}
+{"operation":"next"}
+{"operation":"locals"}
+{"operation":"continue"}
+{"operation":"quit"}
+```
+
+Resume operations wait until the debuggee stops and return a structured `stop_reason`. The controller
+allowlists inspection and execution-control operations; arbitrary console commands and state mutation
+are excluded. See [agent automation](references/agent-automation.md) for the full protocol and
+[probes](probes/) for reusable investigations.
+
+For CI:
+
+```bash
+scripts/ci-triage.sh ./build/app ./debug-bundles -- ./build/native-tests
+```
+
+The wrapper returns the native test's exit code while creating a structured bundle for each discovered
+core. The included GitHub Actions workflow validates the Python and shell automation itself.
 
 ## Scope
 
